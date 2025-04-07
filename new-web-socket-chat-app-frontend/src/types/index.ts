@@ -1,0 +1,33 @@
+export interface Conversation {
+  id: string;
+  displayName: string;
+  lastMessage: string;
+  lastMessageTime: string;
+  senderId: string;
+  receiverId: string;
+  unreadCount: number;
+  online: boolean;
+  avatarColor?: string;
+  category: string;
+  chatId: string;
+}
+
+export interface Message {
+  id: string;
+  conversationId: string;
+  sender: {
+    id: string;
+    name: string;
+  };
+  content: string;
+  timestamp: string;
+  read: boolean;
+}
+
+export interface User {
+  id: string;
+  name: string;
+  phoneNumber: string;
+  // avatarUrl?: string;
+  status: "online" | "offline";
+}

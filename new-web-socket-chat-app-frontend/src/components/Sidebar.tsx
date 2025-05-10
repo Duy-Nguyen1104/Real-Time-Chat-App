@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import {
   Search,
   Users,
@@ -9,10 +9,13 @@ import {
   User,
   ChevronDown,
   LogOut,
+  XCircle,
 } from "lucide-react";
-import type { Conversation } from "../types";
+import type { Conversation, UserResponseDTO } from "../types";
 import Avatar from "./Avatar";
 import Spinner from "./Spinner";
+import axios from "axios";
+import { toast } from "react-toastify";
 
 type SidebarProps = {
   activeConversation: Conversation | null;
@@ -25,6 +28,7 @@ type SidebarProps = {
     id: string;
     name: string;
   };
+  onInitiateConversation: (targetUserId: string) => void;
 };
 
 // Remove the conversation fetching logic from Sidebar.tsx
@@ -36,38 +40,140 @@ function Sidebar({
   setActiveConversation,
   onLogout,
   currentUser,
+  onInitiateConversation,
 }: SidebarProps) {
   const [filter, setFilter] = useState("all");
   const [search, setSearch] = useState("");
+  const [apiSearchResults, setApiSearchResults] = useState<UserResponseDTO[]>(
+    []
+  );
+  const [localSearchResults, setLocalSearchResults] = useState<Conversation[]>(
+    []
+  );
+  const [isSearching, setIsSearching] = useState(false);
+  const [showSearchResults, setShowSearchResults] = useState(false);
   const [showCategoryDropdown, setShowCategoryDropdown] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState("all");
   const [showSettingsDropdown, setShowSettingsDropdown] = useState(false);
-  const [animatedConversations, setAnimatedConversations] = useState<
-    string | null
-  >(null);
+  const searchContainerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    if (conversations.length > 0) {
-      setAnimatedConversations(conversations[0].id);
-      const timer = setTimeout(() => setAnimatedConversations(null), 500);
-      return () => clearTimeout(timer);
+    const handleClickOutside = (event: MouseEvent) => {
+      if (
+        searchContainerRef.current &&
+        !searchContainerRef.current.contains(event.target as Node)
+      ) {
+        setShowSearchResults(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, []);
+
+  const handleSearchChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const query = e.target.value;
+    setSearch(query);
+
+    if (query.trim() === "") {
+      // If the search input is empty, reset the search results
+      setApiSearchResults([]);
+      setLocalSearchResults([]);
+      setShowSearchResults(false);
+      return;
     }
-  }, [conversations]);
+
+    setShowSearchResults(true);
+    setIsSearching(true);
+
+    // Heuristic: if query is all digits and a certain length
+    const isPhoneNumber = /^\d{5,}$/.test(query);
+
+    if (isPhoneNumber) {
+      setLocalSearchResults([]); // Clear local results when searching by phone
+      try {
+        const token = localStorage.getItem("authToken");
+        const response = await axios.get(
+          `/api/users/search?query=${encodeURIComponent(query)}`,
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          }
+        );
+        setApiSearchResults(response.data.data || []);
+      } catch (error: any) {
+        console.error("Failed to search users by phone:", error);
+        toast.error(
+          error.response?.data?.message || "Failed to search users by phone."
+        );
+        setApiSearchResults([]);
+      }
+    } else {
+      // Search by name (locally, in existing conversations)
+      setApiSearchResults([]); // Clear API results when searching by name
+      const filteredConversations = conversations.filter((conv) =>
+        conv.displayName.toLowerCase().includes(query.toLowerCase())
+      );
+      setLocalSearchResults(filteredConversations);
+    }
+    setIsSearching(false);
+  };
+
+  const handleApiResultClick = async (user: UserResponseDTO) => {
+    setShowSearchResults(false);
+    setSearch("");
+    setApiSearchResults([]);
+    setLocalSearchResults([]);
+
+    const existingConv = conversations.find(
+      (c) =>
+        (c.senderId === currentUser.id && c.receiverId === user.id) ||
+        (c.senderId === user.id && c.receiverId === currentUser.id)
+    );
+
+    if (existingConv) {
+      setActiveConversation(existingConv.id);
+    } else {
+      await onInitiateConversation(user.id);
+    }
+  };
+
+  const handleLocalResultClick = (conversation: Conversation) => {
+    setShowSearchResults(false);
+    setSearch("");
+    setApiSearchResults([]);
+    setLocalSearchResults([]);
+    setActiveConversation(conversation.id);
+  };
+
+  const clearSearch = () => {
+    setSearch("");
+    setApiSearchResults([]);
+    setLocalSearchResults([]);
+    setShowSearchResults(false);
+  };
 
   //Filter conversation
-  const filteredConversations = conversations.filter((conversation) => {
-    const matchesSearch = conversation.displayName
-      .toLowerCase()
-      .includes(search.toLowerCase());
-
+  const displayedConversations = conversations.filter((conversation) => {
     const matchesFilter =
       filter === "all" || (filter === "unread" && conversation.unreadCount > 0);
 
     const matchesCategory =
-      selectedCategory === "all" || conversation.category === selectedCategory;
+      selectedCategory === "all"
+        ? true
+        : conversation.category === selectedCategory;
 
-    return matchesSearch && matchesFilter && matchesCategory;
+    return matchesFilter && matchesCategory;
   });
+
+  const highlightUnread = (conversation: Conversation) => {
+    return (
+      conversation.unreadCount > 0 //&&
+      // conversation.lastMessageSenderId !== currentUser.id
+    );
+  };
 
   const categories = ["all", "work", "family", "friends"];
 
@@ -78,17 +184,79 @@ function Sidebar({
         <div className="flex-shrink-0">
           <Avatar name={currentUser.name} size="md" />
         </div>
-        <div className="flex-1 ml-2">
+        <div className="flex-1 ml-2 relative" ref={searchContainerRef}>
           <div className="relative">
             <Search className="absolute left-2 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
             <input
               type="text"
-              placeholder="Tìm kiếm"
+              placeholder="Search"
               className="w-full bg-[#2a2a2a] rounded-full py-1.5 pl-8 pr-2 text-sm focus:outline-none"
               value={search}
-              onChange={(e) => setSearch(e.target.value)}
+              onChange={handleSearchChange}
+              onFocus={() => setShowSearchResults(true)}
             />
+            {search && (
+              <XCircle
+                className="absolute right-2 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-300 cursor-pointer h-4 w-4"
+                onClick={clearSearch}
+              />
+            )}
           </div>
+          {showSearchResults && (
+            <div className="absolute top-full mt-1 w-full bg-[#252525] rounded-md shadow-lg z-20 max-h-60 overflow-y-auto border border-[#3a3a3a]">
+              {isSearching && (
+                <div className="p-3 text-sm text-gray-400 text-center">
+                  Searching...
+                </div>
+              )}
+              {!isSearching &&
+                apiSearchResults.map((user) => (
+                  <div
+                    key={user.id}
+                    className="flex items-center p-2.5 cursor-pointer hover:bg-[#3a3a3a] transition-colors duration-150"
+                    onClick={() => handleApiResultClick(user)}
+                  >
+                    <Avatar
+                      name={user.name}
+                      size="sm"
+                      bgColor={
+                        user.status === "online"
+                          ? "bg-green-500"
+                          : "bg-gray-500"
+                      }
+                    />
+                    <div className="ml-2.5">
+                      <p className="text-sm text-white font-medium">
+                        {user.name}
+                      </p>
+                      <p className="text-xs text-gray-400">
+                        {user.phoneNumber}
+                      </p>
+                    </div>
+                  </div>
+                ))}
+              {/* Local Search Results (Conversations) */}
+              {!isSearching &&
+                localSearchResults.map((conv) => (
+                  <div
+                    key={conv.id}
+                    className="flex items-center p-2.5 cursor-pointer hover:bg-[#3a3a3a] transition-colors duration-150"
+                    onClick={() => handleLocalResultClick(conv)}
+                  >
+                    <Avatar
+                      name={conv.displayName}
+                      size="sm"
+                      bgColor={conv.avatarColor}
+                    />
+                    <div className="ml-2.5">
+                      <p className="text-sm text-white font-medium">
+                        {conv.displayName}
+                      </p>
+                    </div>
+                  </div>
+                ))}
+            </div>
+          )}
         </div>
         <div className="flex space-x-1 ml-1">
           <button className="p-1 rounded-full hover:bg-[#2a2a2a]">
@@ -148,41 +316,20 @@ function Sidebar({
             </div>
           )}
         </div>
-        <button className="py-1.5 px-2 text-gray-400">
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            width="20"
-            height="20"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          >
-            <circle cx="12" cy="12" r="1" />
-            <circle cx="19" cy="12" r="1" />
-            <circle cx="5" cy="12" r="1" />
-          </svg>
-        </button>
       </div>
 
       {/* Conversation list */}
       <div className="flex-1 overflow-y-auto">
         {isLoading ? (
           <Spinner />
-        ) : filteredConversations.length > 0 ? (
-          filteredConversations.map((conversation) => (
+        ) : displayedConversations.length > 0 ? (
+          displayedConversations.map((conversation) => (
             <div
               key={conversation.id}
               className={`flex items-center p-2 cursor-pointer ${
                 activeConversation?.id === conversation.id
                   ? "bg-[#2a2a2a]"
                   : "hover:bg-[#232323]"
-              } ${
-                animatedConversations === conversation.id
-                  ? "animate-slide-down"
-                  : ""
               } transition-all duration-300 ease-in-out`}
               onClick={() => setActiveConversation(conversation.id)}
             >
@@ -206,15 +353,19 @@ function Sidebar({
                   </span>
                 </div>
                 <div className="flex items-center">
-                  <p className="text-sm text-gray-400 truncate">
+                  <p
+                    className={`text-sm truncate ${
+                      highlightUnread(conversation)
+                        ? "text-white font-medium"
+                        : "text-gray-400"
+                    }`}
+                  >
                     {conversation.lastMessage}
                   </p>
-                  {conversation.unreadCount > 0 && (
-                    <div className="ml-2 flex-shrink-0 w-5 h-5 bg-red-500 rounded-full flex items-center justify-center">
-                      <span className="text-xs">
-                        {conversation.unreadCount}
-                      </span>
-                    </div>
+                  {highlightUnread(conversation) && (
+                    <span className="ml-auto pl-2 flex-shrink-0">
+                      <div className="w-2 h-2 bg-blue-500 rounded-full" />
+                    </span>
                   )}
                 </div>
               </div>

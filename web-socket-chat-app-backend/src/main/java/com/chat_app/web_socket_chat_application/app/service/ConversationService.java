@@ -13,6 +13,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.text.SimpleDateFormat;
+import java.util.Collections;
 import java.util.Date;
 import java.util.List;
 import java.util.Optional;
@@ -102,6 +103,15 @@ public class ConversationService {
                 .orElseThrow(() -> new AppException(ExceptionCode.USER_NOT_EXISTED));
 
         List<Conversation> conversations = conversationRepository.findBySenderIdOrReceiverId(userId, userId);
+
+        Collections.sort(conversations, (c1, c2) -> {
+            // If no last message, put at the end
+            if (c1.getLastMessageTime() == null) return 1;
+            if (c2.getLastMessageTime() == null) return -1;
+
+            // Compare timestamps in reverse order (newest first)
+            return c2.getLastMessageTime().compareTo(c1.getLastMessageTime());
+        });
 
         return conversations.stream().map(conversation -> {
             String displayName;

@@ -30,7 +30,7 @@ public class SecurityConfig {
     private NimbusJwtDecoder nimbusJwtDecoder = null;
 
     private final String[] PUBLIC_ENDPOINTS = {
-            "/auth/register", "/auth/login", "/chat/**", "/ws/**"
+            "/auth/register", "/auth/login", "/chat/**", "/ws/**", "/app/**", "/user/**"
     };
 
     @Bean

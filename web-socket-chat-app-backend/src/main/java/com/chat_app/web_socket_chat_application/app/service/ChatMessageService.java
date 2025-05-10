@@ -10,6 +10,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -27,19 +28,31 @@ public class ChatMessageService {
 
     public ChatMessage save(ChatMessage chatMessage) {
         if (chatMessage.getTimestamp() == null) {
-            chatMessage.setTimestamp(new Date().toString());
+            SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'");
+            chatMessage.setTimestamp(dateFormat.format(new Date()));
         }
+
         Conversation conversation = conversationService.createOrGetConversation(
                 chatMessage.getSenderId(), chatMessage.getReceiverId());
 
         chatMessage.setConversationId(conversation.getId());
         chatMessage.setRead(false);
+
+        // Set sender information
+        User sender = userRepository.findById(chatMessage.getSenderId())
+                .orElseThrow(() -> new IllegalArgumentException("Sender not found"));
+        chatMessage.setSender(new ChatMessage.SenderInfo(sender.getId(), sender.getName()));
+
         ChatMessage savedMessage = chatMessageRepository.save(chatMessage);
+
+        // Format timestamp for displaying in conversation list
+        SimpleDateFormat timeFormat = new SimpleDateFormat("HH:mm");
+        String displayTime = timeFormat.format(new Date());
 
         conversationService.updateLastMessage(
                 conversation.getId(),
                 chatMessage.getContent(),
-                chatMessage.getTimestamp());
+                displayTime);
 
         log.info("Chat message saved: {}", savedMessage);
         return savedMessage;
@@ -47,30 +60,40 @@ public class ChatMessageService {
 
     public List<ChatMessage> findChatMessages(String senderId, String receiverId) {
         Conversation conversation = conversationService.createOrGetConversation(senderId, receiverId);
+        return findMessagesByConversationId(conversation.getId());
+    }
 
-        List<ChatMessage> messages = chatMessageRepository.findByConversationId(conversation.getId());
+    public List<ChatMessage> findChatMessagesBetweenUsers(String userId1, String userId2) {
+        // Try to find conversation in both directions
+        Conversation conversation = conversationService.createOrGetConversation(userId1, userId2);
+        return findMessagesByConversationId(conversation.getId());
+    }
+
+    private List<ChatMessage> findMessagesByConversationId(String conversationId) {
+        List<ChatMessage> messages = chatMessageRepository.findByConversationId(conversationId);
 
         return messages.stream().map(message -> {
-            User sender = userRepository.findById(message.getSenderId()).orElse(null);
-            if (sender != null) {
-                message.setSender(new ChatMessage.SenderInfo(sender.getId(), sender.getName()));
+            // Ensure sender info is included
+            if (message.getSender() == null) {
+                User sender = userRepository.findById(message.getSenderId()).orElse(null);
+                if (sender != null) {
+                    message.setSender(new ChatMessage.SenderInfo(sender.getId(), sender.getName()));
+                }
             }
             return message;
         }).collect(Collectors.toList());
     }
 
-    public void deleteMessage(String id) {
-        if (!chatMessageRepository.existsById(id)) {
-            throw new IllegalArgumentException("Message with ID " + id + " does not exist.");
-        }
-        chatMessageRepository.deleteById(id);
-        log.info("Deleted message with ID: {}", id);
-    }
+    public void markMessagesAsRead(String conversationId, String receiverId) {
+        List<ChatMessage> unreadMessages = chatMessageRepository
+                .findByConversationIdAndReceiverIdAndReadFalse(conversationId, receiverId);
 
-    public void markMessageAsRead(String messageId) {
-        ChatMessage message = chatMessageRepository.findById(messageId)
-                .orElseThrow(() -> new IllegalArgumentException("Message not found"));
-        message.setRead(true);
-        chatMessageRepository.save(message);
+        unreadMessages.forEach(message -> {
+            message.setRead(true);
+            chatMessageRepository.save(message);
+        });
+
+        // Update conversation unread count
+        conversationService.markAsRead(conversationId);
     }
 }

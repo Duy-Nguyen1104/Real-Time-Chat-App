@@ -11,6 +11,7 @@ import org.springframework.messaging.handler.annotation.Payload;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.web.bind.annotation.*;
 
+import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.List;
 
@@ -27,9 +28,11 @@ public class ChatController {
 
         // Set timestamp if not set
         if (chatMessage.getTimestamp() == null) {
-            chatMessage.setTimestamp(new Date().toString());
+            SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'");
+            chatMessage.setTimestamp(dateFormat.format(new Date()));
         }
         ChatMessage savedMessage = chatMessageService.save(chatMessage);
+
         // Send to the receiver's queue
         simpMessagingTemplate.convertAndSendToUser(
                 chatMessage.getReceiverId(),
@@ -44,7 +47,7 @@ public class ChatController {
             @PathVariable String receiverId
     ) {
         log.info("Finding chat messages between {} and {}", senderId, receiverId);
-        List<ChatMessage> messages = chatMessageService.findChatMessages(senderId, receiverId);
+        List<ChatMessage> messages = chatMessageService.findChatMessagesBetweenUsers(senderId, receiverId);
         return new SuccessResponse<>(messages);
     }
 
@@ -55,8 +58,16 @@ public class ChatController {
         if (chatMessage.getTimestamp() == null) {
             chatMessage.setTimestamp(new Date().toString());
         }
+
         // Save the message
         ChatMessage savedMessage = chatMessageService.save(chatMessage);
+
+        // Send real-time notification via WebSocket
+        simpMessagingTemplate.convertAndSendToUser(
+                chatMessage.getReceiverId(),
+                "/queue/messages",
+                savedMessage
+        );
 
         return new SuccessResponse<>(savedMessage);
     }

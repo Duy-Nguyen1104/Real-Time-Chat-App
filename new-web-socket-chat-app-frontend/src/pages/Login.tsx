@@ -97,7 +97,7 @@ function Login() {
             <div className="rounded-md shadow-sm -space-y-px">
               <div>
                 <label htmlFor="phone-number" className="sr-only">
-                  Số điện thoại
+                  Phone Number
                 </label>
                 <input
                   id="phone-number"
@@ -107,14 +107,14 @@ function Login() {
                   className="appearance-none rounded-none relative block w-full px-3 py-2 border 
                   border-gray-300 placeholder-gray-500 text-white rounded-t-md focus:outline-none 
                   focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm"
-                  placeholder="Số điện thoại"
+                  placeholder="Phone Number"
                   value={phoneNumber}
                   onChange={handleChange}
                 />
               </div>
               <div className="mb-4">
                 <label htmlFor="password" className="sr-only">
-                  Mật khẩu
+                  Password
                 </label>
                 <input
                   id="password"
@@ -123,7 +123,7 @@ function Login() {
                   autoComplete="current-password"
                   required
                   className="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-white rounded-b-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm"
-                  placeholder="Mật khẩu"
+                  placeholder="Password"
                   value={password}
                   onChange={handleChange}
                 />
@@ -153,7 +153,7 @@ function Login() {
                   htmlFor="remember-me"
                   className="ml-2 block text-sm text-gray-400"
                 >
-                  Ghi nhớ đăng nhập
+                  Remember me
                 </label>
               </div>
 
@@ -162,7 +162,7 @@ function Login() {
                   href="#"
                   className="font-medium text-blue-600 hover:text-blue-500"
                 >
-                  Quên mật khẩu?
+                  Forget Password?
                 </a>
               </div>
             </div>
@@ -172,17 +172,17 @@ function Login() {
                 type="submit"
                 className="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
               >
-                Đăng nhập
+                Login
               </button>
             </div>
 
             <div className="text-center text-sm text-gray-300 mt-3">
-              Chưa có tài khoản?{" "}
+              Don't have an account?{" "}
               <Link
                 to="/signup"
                 className="font-bold text-blue-500 hover:text-blue-400"
               >
-                Đăng ký
+                Signup
               </Link>
             </div>
           </form>

@@ -31,3 +31,10 @@ export interface User {
   // avatarUrl?: string;
   status: "online" | "offline";
 }
+
+export interface UserResponseDTO {
+  id: string;
+  name: string;
+  phoneNumber: string;
+  status: "online" | "offline";
+}

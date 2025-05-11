@@ -6,16 +6,25 @@ import com.chat_app.web_socket_chat_application.api.response.AuthenticationRespo
 import com.chat_app.web_socket_chat_application.app.exceptions.AppException;
 import com.chat_app.web_socket_chat_application.app.exceptions.ExceptionCode;
 import com.chat_app.web_socket_chat_application.config.JwtUtil;
+import com.chat_app.web_socket_chat_application.domain.entity.Conversation;
 import com.chat_app.web_socket_chat_application.domain.entity.User;
+import com.chat_app.web_socket_chat_application.domain.repository.ConversationRepository;
 import com.chat_app.web_socket_chat_application.domain.repository.UserRepository;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
+import java.util.List;
+
+@Slf4j
 @Service
 public class AuthenticationService {
     @Autowired
     private UserRepository userRepository;
+
+    @Autowired
+    private ConversationRepository conversationRepository;
 
     @Autowired
     private JwtUtil jwtUtil;
@@ -25,6 +34,7 @@ public class AuthenticationService {
 
     public AuthenticationResponse login(AuthenticationDTO authenticationDTO) {
         User user = userRepository.findByPhoneNumber(authenticationDTO.getPhoneNumber());
+        List<Conversation> conversations = conversationRepository.findBySenderIdOrReceiverId(user.getId(), user.getId());
 
         if (user == null) {
             throw new AppException(ExceptionCode.USER_NOT_EXISTED);

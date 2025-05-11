@@ -183,10 +183,6 @@ function Chat() {
     try {
       // Format current time consistently for display
       const now = new Date();
-      const formattedTime = now.toLocaleTimeString([], {
-        hour: "2-digit",
-        minute: "2-digit",
-      });
 
       const message = {
         senderId: currentUser.id,
@@ -218,7 +214,7 @@ function Chat() {
       const updatedConversation = {
         ...activeConversation,
         lastMessage: content,
-        lastMessageTime: formattedTime,
+        lastMessageTime: now.toISOString(),
       };
 
       // Update the conversations array - remove the active conversation and add it to the top

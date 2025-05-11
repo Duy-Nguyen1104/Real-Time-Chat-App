@@ -21,6 +21,19 @@ interface ChatAreaProps {
   currentUserId: string;
 }
 
+const formatDateForSeparator = (isoTimestamp: string): string => {
+  try {
+    const date = new Date(isoTimestamp);
+    const day = String(date.getDate()).padStart(2, "0");
+    const month = String(date.getMonth() + 1).padStart(2, "0"); // Month is 0-indexed
+    const year = date.getFullYear();
+    return `${day}/${month}/${year}`;
+  } catch (error) {
+    console.error("Error formatting date for separator:", error);
+    return "Invalid Date";
+  }
+};
+
 export default function ChatArea({
   conversation,
   messages,
@@ -92,13 +105,36 @@ export default function ChatArea({
       <div className="flex-1 overflow-y-auto p-4">
         <div className="space-y-4">
           {messages.length > 0 ? (
-            messages.map((message) => (
-              <MessageBubble
-                key={message.id}
-                message={message}
-                isCurrentUser={message.sender.id === currentUserId}
-              />
-            ))
+            (() => {
+              let lastDisplayedDate: string | null = null;
+              return messages.map((message, index) => {
+                const messageDate = formatDateForSeparator(message.timestamp);
+                let dateSeparator = null;
+
+                if (messageDate !== lastDisplayedDate) {
+                  dateSeparator = (
+                    <div
+                      key={`date-${messageDate}-${index}`}
+                      className="text-center text-xs text-gray-500 my-4"
+                    >
+                      {messageDate}
+                    </div>
+                  );
+                  lastDisplayedDate = messageDate;
+                }
+
+                return (
+                  <>
+                    {dateSeparator}
+                    <MessageBubble
+                      key={message.id}
+                      message={message}
+                      isCurrentUser={message.sender.id === currentUserId}
+                    />
+                  </>
+                );
+              });
+            })()
           ) : (
             <div className="text-center text-gray-400 my-8">
               No messages yet. Start a conversation!

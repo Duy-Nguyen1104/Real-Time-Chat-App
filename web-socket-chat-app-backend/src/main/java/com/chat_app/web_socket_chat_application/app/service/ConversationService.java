@@ -43,15 +43,13 @@ public class ConversationService {
             conversation = conversationRepository.findBySenderIdAndReceiverId(receiver.getId(), sender.getId());
         }
 
-        SimpleDateFormat dateFormat = new SimpleDateFormat("dd/MM");
-
         return conversation.orElseGet(() -> {
             Conversation newConversation = new Conversation();
             newConversation.setSenderId(senderId);
             newConversation.setReceiverId(receiverId);
             newConversation.setName(receiver.getName()); // Keep this for backward compatibility
             newConversation.setLastMessage(""); // Empty last message
-            newConversation.setLastMessageTime(dateFormat.format(new Date()));
+            newConversation.setLastMessageTime(null);
             newConversation.setUnreadCount(0);
             newConversation.setOnline(false); // Default to offline
             newConversation.setCategory("all"); // Default category

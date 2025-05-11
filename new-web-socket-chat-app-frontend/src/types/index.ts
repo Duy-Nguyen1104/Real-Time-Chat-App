@@ -2,7 +2,7 @@ export interface Conversation {
   id: string;
   displayName: string;
   lastMessage: string;
-  lastMessageTime: string;
+  lastMessageTime: string | null;
   senderId: string;
   receiverId: string;
   unreadCount: number;

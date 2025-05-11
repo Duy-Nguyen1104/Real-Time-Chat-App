@@ -45,14 +45,10 @@ public class ChatMessageService {
 
         ChatMessage savedMessage = chatMessageRepository.save(chatMessage);
 
-        // Format timestamp for displaying in conversation list
-        SimpleDateFormat timeFormat = new SimpleDateFormat("HH:mm");
-        String displayTime = timeFormat.format(new Date());
-
         conversationService.updateLastMessage(
                 conversation.getId(),
                 chatMessage.getContent(),
-                displayTime);
+                chatMessage.getTimestamp());
 
         log.info("Chat message saved: {}", savedMessage);
         return savedMessage;

@@ -190,12 +190,12 @@ function Sidebar({
     return matchesFilter && matchesCategory;
   });
 
-  const highlightUnread = (conversation: Conversation) => {
-    return (
-      conversation.unreadCount > 0 //&&
-      // conversation.lastMessageSenderId !== currentUser.id
-    );
-  };
+  // const highlightUnread = (conversation: Conversation) => {
+  //   return (
+  //     conversation.unreadCount > 0 //&&
+  //     // conversation.lastMessageSenderId !== currentUser.id
+  //   );
+  // };
 
   const categories = ["all", "work", "family", "friends"];
 
@@ -376,19 +376,20 @@ function Sidebar({
                 </div>
                 <div className="flex items-center">
                   <p
-                    className={`text-sm truncate ${
-                      highlightUnread(conversation)
-                        ? "text-white font-medium"
-                        : "text-gray-400"
-                    }`}
+                    // className={`text-sm truncate ${
+                    //   highlightUnread(conversation)
+                    //     ? "text-white font-medium"
+                    //     : "text-gray-400"
+                    // }`}
+                    className="text-sm truncate text-gray-400"
                   >
                     {conversation.lastMessage}
                   </p>
-                  {highlightUnread(conversation) && (
+                  {/* {highlightUnread(conversation) && (
                     <span className="ml-auto pl-2 flex-shrink-0">
                       <div className="w-2 h-2 bg-blue-500 rounded-full" />
                     </span>
-                  )}
+                  )} */}
                 </div>
               </div>
             </div>

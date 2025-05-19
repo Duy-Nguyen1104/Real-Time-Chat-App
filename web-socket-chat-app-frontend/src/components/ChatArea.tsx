@@ -8,7 +8,6 @@ import {
   Smile,
   Send,
   MoreHorizontal,
-  X,
 } from "lucide-react";
 import type { Conversation, Message } from "../types";
 import Avatar from "./Avatar";

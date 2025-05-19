@@ -28,7 +28,6 @@ export interface User {
   id: string;
   name: string;
   phoneNumber: string;
-  // avatarUrl?: string;
   status: "online" | "offline";
 }
 

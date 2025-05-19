@@ -1,0 +1,29 @@
+# Git files
+.git
+.gitignore
+.github
+
+# Documentation
+*.md
+!README.md
+LICENSE
+docs
+
+# IDE files
+.idea
+.vscode
+*.iml
+.project
+.classpath
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Local environment files
+.env
+.env.local
+
+# Other unnecessary files
+*.log
+*.tmp

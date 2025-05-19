@@ -1,4 +1,3 @@
-// filepath: c:\Code\Final-Chat-App\web-socket-chat-app-frontend\src\pages\ForgotPasswordPage.tsx
 import { ChangeEvent, FormEvent, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";

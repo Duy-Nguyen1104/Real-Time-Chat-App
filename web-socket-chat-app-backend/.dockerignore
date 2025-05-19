@@ -1,0 +1,28 @@
+# Build artifacts
+target/
+!target/*.jar
+*.class
+
+# Git files
+.git/
+.gitignore
+
+# IDE files
+.idea/
+.vscode/
+*.iml
+
+# Logs
+*.log
+logs/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Docker files
+Dockerfile
+docker-compose.yml
+
+# Maven wrapper jar
+.mvn/wrapper/maven-wrapper.jar

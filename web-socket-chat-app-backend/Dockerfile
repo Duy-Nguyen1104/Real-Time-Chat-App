@@ -1,9 +1,33 @@
-FROM openjdk:21-jdk-slim
-
+# Build stage
+FROM eclipse-temurin:21-jdk-alpine AS build
 WORKDIR /app
 
-COPY target/*.jar app.jar
+# Copy maven wrapper and pom.xml
+COPY mvnw .
+COPY .mvn .mvn
+COPY pom.xml .
 
+# Make the mvnw script executable
+RUN chmod +x ./mvnw
+
+# Download dependencies
+RUN ./mvnw dependency:go-offline -B
+
+# Copy the project source
+COPY src ./src
+
+# Build the application
+RUN ./mvnw clean package -DskipTests
+
+# Runtime stage
+FROM eclipse-temurin:21-jre-alpine
+WORKDIR /app
+
+# Copy the built jar file
+COPY --from=build /app/target/*.jar app.jar
+
+# Expose the port the app runs on
 EXPOSE 8080
 
-ENTRYPOINT ["java", "-jar", "app.jar"]
+# Run the application with reasonable memory settings
+ENTRYPOINT ["java", "-Xms128m", "-Xmx512m", "-jar", "app.jar"]

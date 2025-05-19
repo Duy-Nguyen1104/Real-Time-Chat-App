@@ -1,4 +1,4 @@
-import { Navigate, Outlet, redirect, replace } from "react-router-dom";
+import { Navigate, Outlet } from "react-router-dom";
 import { isAuthenticated } from "../services/authService";
 
 interface ProtectedRouteProps {

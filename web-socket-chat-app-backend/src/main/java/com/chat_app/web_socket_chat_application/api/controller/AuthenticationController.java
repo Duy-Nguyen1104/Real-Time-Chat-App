@@ -1,6 +1,7 @@
 package com.chat_app.web_socket_chat_application.api.controller;
 
 import com.chat_app.web_socket_chat_application.api.dto.AuthenticationDTO;
+import com.chat_app.web_socket_chat_application.api.dto.ResetPasswordDTO;
 import com.chat_app.web_socket_chat_application.api.dto.UserDTO;
 import com.chat_app.web_socket_chat_application.api.response.ApiResponse;
 import com.chat_app.web_socket_chat_application.api.response.AuthenticationResponse;
@@ -29,6 +30,13 @@ public class AuthenticationController {
     public ApiResponse<AuthenticationResponse> login(@RequestBody AuthenticationDTO authenticationDTO) {
         log.info("Login with phone number: {}", authenticationDTO.getPhoneNumber());
         AuthenticationResponse authenticationResponse = authenticationService.login(authenticationDTO);
+        return new SuccessResponse<>(authenticationResponse);
+    }
+
+    @PostMapping("/reset-password")
+    public ApiResponse<?> directResetPassword(@RequestBody ResetPasswordDTO request) {
+        log.info("Direct password reset request for phone number: {}", request.getPhoneNumber());
+        AuthenticationResponse authenticationResponse = authenticationService.resetPassword(request);
         return new SuccessResponse<>(authenticationResponse);
     }
 

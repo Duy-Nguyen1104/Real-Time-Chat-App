@@ -19,6 +19,10 @@ public class UserService {
     @Autowired
     private UserRepository userRepository;
 
+    public List<User> findAllUsers() {
+        return userRepository.findAll();
+    }
+
     public List<User> searchUsers(String query, String currentUserId) {
         Set<User> distinctUsers = new HashSet<>();
 

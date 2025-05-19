@@ -37,6 +37,17 @@ export const registerUser = async (userData: {
   return response.data;
 };
 
+export const resetPassword = async (
+  phoneNumber: string,
+  newPassword: string
+) => {
+  const response = await axios.post("/auth/reset-password", {
+    phoneNumber,
+    newPassword,
+  });
+  return response.data;
+};
+
 export const logoutUser = () => {
   localStorage.removeItem("authToken");
   localStorage.removeItem("userId");

@@ -1,6 +1,7 @@
 package com.chat_app.web_socket_chat_application.app.service;
 
 import com.chat_app.web_socket_chat_application.api.dto.AuthenticationDTO;
+import com.chat_app.web_socket_chat_application.api.dto.ResetPasswordDTO;
 import com.chat_app.web_socket_chat_application.api.dto.UserDTO;
 import com.chat_app.web_socket_chat_application.api.response.AuthenticationResponse;
 import com.chat_app.web_socket_chat_application.app.exceptions.AppException;
@@ -49,6 +50,19 @@ public class AuthenticationService {
 
         String token = jwtUtil.generateToken(user.getPhoneNumber());
 
+        return new AuthenticationResponse(token, user.getId(), user.getName(), user.getStatus());
+    }
+
+    public AuthenticationResponse resetPassword(ResetPasswordDTO request) {
+        User user = userRepository.findByPhoneNumber(request.getPhoneNumber());
+        if (user == null) {
+            throw new AppException(ExceptionCode.USER_NOT_EXISTED);
+        }
+
+        user.setPassword(passwordEncoder.encode(request.getNewPassword()));
+        userRepository.save(user);
+
+        String token = jwtUtil.generateToken(user.getPhoneNumber());
         return new AuthenticationResponse(token, user.getId(), user.getName(), user.getStatus());
     }
 

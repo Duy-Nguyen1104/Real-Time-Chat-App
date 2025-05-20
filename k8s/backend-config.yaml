@@ -1,0 +1,19 @@
+apiVersion: cloud.google.com/v1
+kind: BackendConfig
+metadata:
+  name: chat-backend-config
+  namespace: chat-app
+spec:
+  timeoutSec: 300
+  connectionDraining:
+    drainingTimeoutSec: 600
+  sessionAffinity:
+    affinityType: "CLIENT_IP"
+  healthCheck:
+    type: HTTP
+    requestPath: /actuator/health
+    port: 8080
+    checkIntervalSec: 20
+    timeoutSec: 15
+    healthyThreshold: 1
+    unhealthyThreshold: 3

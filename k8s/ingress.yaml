@@ -1,0 +1,52 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: chat-ingress
+  namespace: chat-app
+  annotations:
+    kubernetes.io/ingress.class: "gce"
+spec:
+  ingressClassName: gce
+  defaultBackend:
+    service:
+      name: chat-frontend-service
+      port:
+        number: 80
+  rules:
+    - http:
+        paths:
+          - path: /api
+            pathType: Prefix
+            backend:
+              service:
+                name: chat-backend-service
+                port:
+                  number: 8080
+          - path: /chat
+            pathType: Prefix
+            backend:
+              service:
+                name: chat-backend-service
+                port:
+                  number: 8080
+          - path: /conversations
+            pathType: Prefix
+            backend:
+              service:
+                name: chat-backend-service
+                port:
+                  number: 8080
+          - path: /messages
+            pathType: Prefix
+            backend:
+              service:
+                name: chat-backend-service
+                port:
+                  number: 8080
+          - path: /auth
+            pathType: Prefix
+            backend:
+              service:
+                name: chat-backend-service
+                port:
+                  number: 8080

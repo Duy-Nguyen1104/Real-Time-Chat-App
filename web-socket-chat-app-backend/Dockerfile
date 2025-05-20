@@ -7,6 +7,8 @@ COPY mvnw .
 COPY .mvn .mvn
 COPY pom.xml .
 
+RUN apk add --no-cache ca-certificates
+
 # Make the mvnw script executable
 RUN chmod +x ./mvnw
 
@@ -22,6 +24,8 @@ RUN ./mvnw clean package -DskipTests
 # Runtime stage
 FROM eclipse-temurin:21-jre-alpine
 WORKDIR /app
+
+RUN apk add --no-cache ca-certificates
 
 # Copy the built jar file
 COPY --from=build /app/target/*.jar app.jar

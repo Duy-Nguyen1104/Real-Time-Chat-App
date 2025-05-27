@@ -6,7 +6,7 @@ import org.springframework.http.HttpStatus;
 @Getter
 public class SuccessResponse<T> extends ApiResponse<T>{
     public SuccessResponse(T data) {
-        super("Sucesss", 200, data);
+        super("Success", 200, data);
     }
 
     public SuccessResponse() {

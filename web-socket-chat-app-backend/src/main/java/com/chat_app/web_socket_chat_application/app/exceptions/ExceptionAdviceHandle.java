@@ -9,36 +9,41 @@ import org.springframework.core.annotation.Order;
 import org.springframework.http.HttpStatus;
 import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
-import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
+import org.springframework.web.bind.annotation.ResponseStatus;
+import org.springframework.web.bind.annotation.RestControllerAdvice;
 
 import java.util.ArrayList;
 import java.util.List;
 
 @Order(Ordered.HIGHEST_PRECEDENCE)
-@ControllerAdvice
+@RestControllerAdvice
 @Slf4j
 public class ExceptionAdviceHandle {
     @ExceptionHandler(value = AppException.class)
     public ApiResponse<?> handleAppException(AppException e) {
         log.error(String.format("%s : %s ", e.getClass().getSimpleName(), e.getMessage()), e);
-        return new ApiResponse<>( e.getMessage(), e.getCode(), null);
+        return new ErrorResponse<>( e.getMessage(), e.getCode(), null);
     }
 
     @ExceptionHandler(value = Exception.class)
-    public ApiResponse internalServerError(Exception e) {
+    @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
+    public ApiResponse<?> internalServerError(Exception e) {
         log.error(String.format("%s : %s ", e.getClass().getSimpleName(), e.getMessage()), e);
-        return new ErrorResponse("The request is temporarily interrupted. Please try again later.", HttpStatus.INTERNAL_SERVER_ERROR.value());
+        return new ErrorResponse<>("The request is temporarily interrupted. Please try again later.", HttpStatus.INTERNAL_SERVER_ERROR.value());
     }
 
     @ExceptionHandler(value = MethodArgumentNotValidException.class)
-    public ApiResponse handleMethodArgumentNotValidException(MethodArgumentNotValidException e) {
+    public ApiResponse<?> handleMethodArgumentNotValidException(MethodArgumentNotValidException e) {
         log.error(String.format("%s : %s ", e.getClass().getSimpleName(), e.getMessage()), e);
-        return new ErrorResponse("Invalid Input", HttpStatus.BAD_REQUEST.value());
+        
+        // Extract field errors from the validation exception
+        List<FieldError> errors = e.getBindingResult().getFieldErrors();
+        return new ErrorResponse<>("Invalid Input", HttpStatus.BAD_REQUEST.value(), errors);
     }
 
     @ExceptionHandler(value = ConstraintViolationException.class)
-    public ApiResponse handleConstraintViolationException(ConstraintViolationException e) {
+    public ApiResponse<?> handleConstraintViolationException(ConstraintViolationException e) {
         log.error(String.format("%s : %s ", e.getClass().getSimpleName(), e.getMessage()), e);
 
         List<FieldError> errors = new ArrayList<>();
@@ -52,7 +57,7 @@ public class ExceptionAdviceHandle {
                         null,
                         cv.getMessage()
                 )));
-        return new ErrorResponse("Invalid Input", errors);
+        return new ErrorResponse<>("Invalid Input", errors);
     }
 
 }

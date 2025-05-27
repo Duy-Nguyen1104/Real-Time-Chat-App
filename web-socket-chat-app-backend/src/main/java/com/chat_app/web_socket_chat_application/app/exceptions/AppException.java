@@ -2,8 +2,8 @@ package com.chat_app.web_socket_chat_application.app.exceptions;
 
 import lombok.Getter;
 
+@Getter
 public class AppException extends RuntimeException {
-    @Getter
     private int code;
     private String message;
 

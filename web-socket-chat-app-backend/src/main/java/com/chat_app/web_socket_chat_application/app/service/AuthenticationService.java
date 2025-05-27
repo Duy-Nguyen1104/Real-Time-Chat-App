@@ -37,10 +37,6 @@ public class AuthenticationService {
         User user = userRepository.findByPhoneNumber(authenticationDTO.getPhoneNumber());
         List<Conversation> conversations = conversationRepository.findBySenderIdOrReceiverId(user.getId(), user.getId());
 
-        if (user == null) {
-            throw new AppException(ExceptionCode.USER_NOT_EXISTED);
-        }
-
         if (!passwordEncoder.matches(authenticationDTO.getPassword(), user.getPassword())) {
             throw new AppException(ExceptionCode.INVALID_PASSWORD);
         }

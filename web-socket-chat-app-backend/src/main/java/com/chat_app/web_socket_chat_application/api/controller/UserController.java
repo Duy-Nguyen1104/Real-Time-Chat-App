@@ -5,13 +5,10 @@ import com.chat_app.web_socket_chat_application.api.response.ApiResponse;
 import com.chat_app.web_socket_chat_application.api.response.SuccessResponse;
 import com.chat_app.web_socket_chat_application.app.service.UserService;
 import com.chat_app.web_socket_chat_application.domain.entity.User;
+import com.chat_app.web_socket_chat_application.domain.repository.UserRepository;
 import com.chat_app.web_socket_chat_application.mapper.UserMapper;
-import com.chat_app.web_socket_chat_application.domain.repository.UserRepository; // Added for current user lookup
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.messaging.handler.annotation.MessageMapping;
-import org.springframework.messaging.handler.annotation.Payload;
-import org.springframework.messaging.handler.annotation.SendTo;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;

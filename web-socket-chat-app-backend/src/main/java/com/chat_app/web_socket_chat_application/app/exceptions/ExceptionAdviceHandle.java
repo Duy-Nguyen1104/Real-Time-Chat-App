@@ -6,6 +6,7 @@ import jakarta.validation.ConstraintViolationException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.core.Ordered;
 import org.springframework.core.annotation.Order;
+import org.springframework.dao.DataAccessResourceFailureException;
 import org.springframework.http.HttpStatus;
 import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
@@ -24,6 +25,14 @@ public class ExceptionAdviceHandle {
     public ApiResponse<?> handleAppException(AppException e) {
         log.error(String.format("%s : %s ", e.getClass().getSimpleName(), e.getMessage()), e);
         return new ErrorResponse<>( e.getMessage(), e.getCode(), null);
+    }
+
+    @ExceptionHandler(value = DataAccessResourceFailureException.class)
+    @ResponseStatus(HttpStatus.SERVICE_UNAVAILABLE)
+    public ApiResponse<?> handleDataAccessResourceFailureException(DataAccessResourceFailureException e) {
+        log.error(String.format("%s : %s ", e.getClass().getSimpleName(), e.getMessage()), e);
+        return new ErrorResponse<>("Database connection temporarily unavailable. Please try again later.", 
+                                   HttpStatus.SERVICE_UNAVAILABLE.value());
     }
 
     @ExceptionHandler(value = Exception.class)

@@ -5,13 +5,12 @@ import com.chat_app.web_socket_chat_application.domain.entity.Conversation;
 import com.chat_app.web_socket_chat_application.domain.entity.User;
 import com.chat_app.web_socket_chat_application.domain.repository.ChatMessageRepository;
 import com.chat_app.web_socket_chat_application.domain.repository.UserRepository;
+import com.chat_app.web_socket_chat_application.util.TimestampUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import java.text.SimpleDateFormat;
-import java.util.Date;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -27,10 +26,8 @@ public class ChatMessageService {
     private final UserRepository userRepository;
 
     public ChatMessage save(ChatMessage chatMessage) {
-        if (chatMessage.getTimestamp() == null) {
-            SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'");
-            chatMessage.setTimestamp(dateFormat.format(new Date()));
-        }
+        // Ensure timestamp is set using TimestampUtil
+        chatMessage.setTimestamp(TimestampUtil.ensureTimestamp(chatMessage.getTimestamp()));
 
         Conversation conversation = conversationService.createOrGetConversation(
                 chatMessage.getSenderId(), chatMessage.getReceiverId());

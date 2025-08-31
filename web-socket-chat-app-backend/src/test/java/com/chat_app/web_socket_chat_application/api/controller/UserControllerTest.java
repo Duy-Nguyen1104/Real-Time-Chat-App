@@ -2,12 +2,11 @@ package com.chat_app.web_socket_chat_application.api.controller;
 
 import com.chat_app.web_socket_chat_application.api.dto.UserResponseDTO;
 import com.chat_app.web_socket_chat_application.api.response.ApiResponse;
-import com.chat_app.web_socket_chat_application.app.exceptions.ExceptionAdviceHandle;
 import com.chat_app.web_socket_chat_application.app.service.UserService;
 import com.chat_app.web_socket_chat_application.domain.entity.User;
 import com.chat_app.web_socket_chat_application.domain.repository.UserRepository;
 import com.chat_app.web_socket_chat_application.mapper.UserMapper;
-import org.junit.jupiter.api.BeforeEach;
+import com.chat_app.web_socket_chat_application.test.base.BaseControllerTest;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -16,8 +15,6 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContext;
 import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.test.web.servlet.MockMvc;
-import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 
 import java.util.Arrays;
 import java.util.List;
@@ -30,7 +27,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @ExtendWith(MockitoExtension.class)
-class UserControllerTest {
+class UserControllerTest extends BaseControllerTest {
 
     @Mock
     private UserService userService;
@@ -50,13 +47,13 @@ class UserControllerTest {
     @InjectMocks
     private UserController userController;
 
-    private MockMvc mockMvc;
+    @Override
+    protected Object getController() {
+        return userController;
+    }
 
-    @BeforeEach
-    void setUp() {
-        mockMvc = MockMvcBuilders.standaloneSetup(userController)
-                .setControllerAdvice(new ExceptionAdviceHandle())
-                .build();
+    @Override
+    protected void customSetUp() {
         SecurityContextHolder.setContext(securityContext);
     }
 

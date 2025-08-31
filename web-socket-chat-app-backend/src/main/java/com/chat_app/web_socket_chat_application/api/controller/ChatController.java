@@ -4,6 +4,7 @@ import com.chat_app.web_socket_chat_application.api.response.ApiResponse;
 import com.chat_app.web_socket_chat_application.api.response.SuccessResponse;
 import com.chat_app.web_socket_chat_application.app.service.ChatMessageService;
 import com.chat_app.web_socket_chat_application.domain.entity.ChatMessage;
+import com.chat_app.web_socket_chat_application.util.TimestampUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.messaging.handler.annotation.MessageMapping;
@@ -11,8 +12,6 @@ import org.springframework.messaging.handler.annotation.Payload;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.web.bind.annotation.*;
 
-import java.text.SimpleDateFormat;
-import java.util.Date;
 import java.util.List;
 
 @RestController
@@ -26,19 +25,20 @@ public class ChatController {
     public void processMessage(@Payload ChatMessage chatMessage) {
         log.info("Processing chat message: {}", chatMessage);
 
-        // Set timestamp if not set
-        if (chatMessage.getTimestamp() == null) {
-            SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'");
-            chatMessage.setTimestamp(dateFormat.format(new Date()));
-        }
+        // Set timestamp if not set using TimestampUtil
+        chatMessage.setTimestamp(TimestampUtil.ensureTimestamp(chatMessage.getTimestamp()));
+        
         ChatMessage savedMessage = chatMessageService.save(chatMessage);
 
-        // Send to the receiver's queue
-        simpMessagingTemplate.convertAndSendToUser(
-                chatMessage.getReceiverId(),
-                "/queue/messages",
-                savedMessage
-        );
+        // Send to the receiver's direct queue
+        String receiverQueue = "/queue/user." + chatMessage.getReceiverId() + ".messages";
+        log.info("Sending to receiver queue: {}", receiverQueue);
+        simpMessagingTemplate.convertAndSend(receiverQueue, savedMessage);
+
+        // Also send to the sender's direct queue for real-time updates across devices
+        String senderQueue = "/queue/user." + chatMessage.getSenderId() + ".messages";
+        log.info("Sending to sender queue: {}", senderQueue);
+        simpMessagingTemplate.convertAndSend(senderQueue, savedMessage);
     }
 
     @GetMapping("/messages/{senderId}/{receiverId}")
@@ -55,19 +55,21 @@ public class ChatController {
     public ApiResponse<ChatMessage> sendMessage(@RequestBody ChatMessage chatMessage) {
         log.info("Sending message via REST: {}", chatMessage);
 
-        if (chatMessage.getTimestamp() == null) {
-            chatMessage.setTimestamp(new Date().toString());
-        }
+        // Set timestamp if not set using TimestampUtil
+        chatMessage.setTimestamp(TimestampUtil.ensureTimestamp(chatMessage.getTimestamp()));
 
         // Save the message
         ChatMessage savedMessage = chatMessageService.save(chatMessage);
 
-        // Send real-time notification via WebSocket
-        simpMessagingTemplate.convertAndSendToUser(
-                chatMessage.getReceiverId(),
-                "/queue/messages",
-                savedMessage
-        );
+        // Send to the receiver's direct queue
+        String receiverQueue = "/queue/user." + chatMessage.getReceiverId() + ".messages";
+        log.info("Sending to receiver queue via REST: {}", receiverQueue);
+        simpMessagingTemplate.convertAndSend(receiverQueue, savedMessage);
+
+        // Also send to the sender's direct queue for real-time updates across devices
+        String senderQueue = "/queue/user." + chatMessage.getSenderId() + ".messages";
+        log.info("Sending to sender queue via REST: {}", senderQueue);
+        simpMessagingTemplate.convertAndSend(senderQueue, savedMessage);
 
         return new SuccessResponse<>(savedMessage);
     }

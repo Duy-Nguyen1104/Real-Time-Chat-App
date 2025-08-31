@@ -12,6 +12,7 @@ import {
 import type { Conversation, Message } from "../types";
 import Avatar from "./Avatar";
 import MessageBubble from "./MessageBubble";
+import { formatDateForSeparator } from "../utils/timestamp";
 
 interface ChatAreaProps {
   conversation: Conversation;
@@ -19,19 +20,6 @@ interface ChatAreaProps {
   onSendMessage: (content: string) => void;
   currentUserId: string;
 }
-
-const formatDateForSeparator = (isoTimestamp: string): string => {
-  try {
-    const date = new Date(isoTimestamp);
-    const day = String(date.getDate()).padStart(2, "0");
-    const month = String(date.getMonth() + 1).padStart(2, "0"); // Month is 0-indexed
-    const year = date.getFullYear();
-    return `${day}/${month}/${year}`;
-  } catch (error) {
-    console.error("Error formatting date for separator:", error);
-    return "Invalid Date";
-  }
-};
 
 export default function ChatArea({
   conversation,

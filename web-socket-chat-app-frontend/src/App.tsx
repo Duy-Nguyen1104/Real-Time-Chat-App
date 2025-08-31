@@ -21,7 +21,7 @@ function App() {
           <Route path="/forgot-password" element={<ForgotPasswordPage />} />
 
           <Route element={<ProtectedRoute />}>
-            <Route path="/chat" element={<Chat />} />
+            <Route path="/home" element={<Chat />} />
           </Route>
         </Routes>
       </BrowserRouter>

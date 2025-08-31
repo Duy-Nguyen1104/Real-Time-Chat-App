@@ -16,6 +16,7 @@ import Avatar from "./Avatar";
 import Spinner from "./Spinner";
 import axios from "axios";
 import { toast } from "react-toastify";
+import { formatConversationTime } from "../utils/timestamp";
 
 type SidebarProps = {
   activeConversation: Conversation | null;
@@ -31,27 +32,7 @@ type SidebarProps = {
   onInitiateConversation: (targetUserId: string) => void;
 };
 
-const formatTimestampToLocalTime = (
-  isoTimestamp: string | null | undefined
-): string => {
-  if (!isoTimestamp) {
-    return "";
-  }
-  try {
-    const date = new Date(isoTimestamp);
-    // Check if date is valid, as new Date(null) or new Date("") can result in Invalid Date
-    if (isNaN(date.getTime())) {
-      return ""; // Or some error/placeholder string
-    }
-    return date.toLocaleTimeString([], {
-      hour: "2-digit",
-      minute: "2-digit",
-    });
-  } catch (error) {
-    console.error("Failed to format timestamp:", isoTimestamp, error);
-    return "Invalid Time"; // Fallback for other errors
-  }
-};
+// Remove the local formatTimestampToLocalTime function since we now use utility
 
 // Remove the conversation fetching logic from Sidebar.tsx
 function Sidebar({
@@ -371,7 +352,7 @@ function Sidebar({
                     {conversation.displayName}
                   </span>
                   <span className="text-xs text-gray-400">
-                    {formatTimestampToLocalTime(conversation.lastMessageTime)}
+                    {formatConversationTime(conversation.lastMessageTime || "")}
                   </span>
                 </div>
                 <div className="flex items-center">

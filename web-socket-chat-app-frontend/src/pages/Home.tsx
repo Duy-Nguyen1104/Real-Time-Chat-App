@@ -8,7 +8,7 @@ export default function Home() {
     const checkAuth = () => {
       const token = localStorage.getItem("authToken");
       if (token) {
-        navigate("/chat");
+        navigate("/home");
       } else {
         navigate("/login");
       }

@@ -24,6 +24,7 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.times;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -63,8 +64,14 @@ class ChatControllerTest {
 
         // Assert
         verify(chatMessageService).save(any(ChatMessage.class));
+        // Verify message is sent to both receiver and sender
         verify(simpMessagingTemplate).convertAndSendToUser(
                 eq("user2"),
+                eq("/queue/messages"),
+                eq(savedMessage)
+        );
+        verify(simpMessagingTemplate).convertAndSendToUser(
+                eq("user1"),
                 eq("/queue/messages"),
                 eq(savedMessage)
         );
@@ -84,7 +91,11 @@ class ChatControllerTest {
 
         // Assert
         verify(chatMessageService).save(argThat(msg -> msg.getTimestamp() != null));
-        verify(simpMessagingTemplate).convertAndSendToUser(anyString(), anyString(), any());
+        // Verify message is sent to both receiver and sender (2 calls total)
+        verify(simpMessagingTemplate, times(2)).convertAndSendToUser(anyString(), anyString(), any());
+        // Verify specific calls to receiver and sender
+        verify(simpMessagingTemplate).convertAndSendToUser(eq("user2"), eq("/queue/messages"), eq(savedMessage));
+        verify(simpMessagingTemplate).convertAndSendToUser(eq("user1"), eq("/queue/messages"), eq(savedMessage));
     }
 
     @Test
@@ -127,8 +138,14 @@ class ChatControllerTest {
                 .andExpect(jsonPath("$.data.content").value("Hello World"));
 
         verify(chatMessageService).save(any(ChatMessage.class));
+        // Verify message is sent to both receiver and sender
         verify(simpMessagingTemplate).convertAndSendToUser(
                 eq("user2"),
+                eq("/queue/messages"),
+                eq(savedMessage)
+        );
+        verify(simpMessagingTemplate).convertAndSendToUser(
+                eq("user1"),
                 eq("/queue/messages"),
                 eq(savedMessage)
         );
@@ -154,7 +171,11 @@ class ChatControllerTest {
         assertEquals(savedMessage, response.getData());
 
         verify(chatMessageService).save(any(ChatMessage.class));
-        verify(simpMessagingTemplate).convertAndSendToUser(anyString(), anyString(), any());
+        // Verify message is sent to both receiver and sender (2 calls total)
+        verify(simpMessagingTemplate, times(2)).convertAndSendToUser(anyString(), anyString(), any());
+        // Verify specific calls to receiver and sender
+        verify(simpMessagingTemplate).convertAndSendToUser(eq("user2"), eq("/queue/messages"), eq(savedMessage));
+        verify(simpMessagingTemplate).convertAndSendToUser(eq("user1"), eq("/queue/messages"), eq(savedMessage));
     }
 
     @Test
@@ -173,6 +194,9 @@ class ChatControllerTest {
         assertNotNull(response);
         assertEquals(savedMessage, response.getData());
         verify(chatMessageService).save(any(ChatMessage.class));
+        // Verify message is sent to both receiver and sender
+        verify(simpMessagingTemplate).convertAndSendToUser(eq("user2"), eq("/queue/messages"), eq(savedMessage));
+        verify(simpMessagingTemplate).convertAndSendToUser(eq("user1"), eq("/queue/messages"), eq(savedMessage));
     }
 
     private ChatMessage createSampleChatMessage() {

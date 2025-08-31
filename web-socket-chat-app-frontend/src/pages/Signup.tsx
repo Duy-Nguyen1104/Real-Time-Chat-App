@@ -4,6 +4,12 @@ import { toast } from "react-toastify";
 import Spinner from "../components/Spinner";
 import { Link } from "react-router-dom";
 import { registerUser } from "../services/authService";
+import {
+  validateSignupForm,
+  ValidationError,
+  getPasswordStrength,
+} from "../utils/validation";
+import { handleFormSubmission } from "../utils/apiResponseHandler";
 
 function Signup() {
   const navigate = useNavigate();
@@ -14,13 +20,7 @@ function Signup() {
     confirmPassword: "",
   });
 
-  const [errors, setErrors] = useState<{
-    name?: string;
-    phoneNumber?: string;
-    password?: string;
-    confirmPassword?: string;
-    general?: string;
-  }>({});
+  const [errors, setErrors] = useState<ValidationError>({});
 
   const { name, phoneNumber, password, confirmPassword } = formData;
   const handleChange = (e: ChangeEvent<HTMLInputElement>) => {
@@ -33,35 +33,14 @@ function Signup() {
   const [isLoading, setIsLoading] = useState(false);
 
   const validateForm = () => {
-    const newErrors: {
-      name?: string;
-      phoneNumber?: string;
-      password?: string;
-      confirmPassword?: string;
-    } = {};
-
-    // Validate name
-    if (!name.trim()) {
-      newErrors.name = "Name is required";
-    }
-
-    // Validate phone number
-    if (!phoneNumber.trim()) {
-      newErrors.phoneNumber = "Phone number is required";
-    }
-
-    // Validate password
-    if (!password) {
-      newErrors.password = "Password is required";
-    } else if (password.length < 6) {
-      newErrors.password = "Password must be at least 6 characters";
-    }
-    if (password !== confirmPassword) {
-      newErrors.confirmPassword = "Passwords do not match";
-    }
-
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
+    const result = validateSignupForm(
+      name,
+      phoneNumber,
+      password,
+      confirmPassword
+    );
+    setErrors(result.errors);
+    return result.isValid;
   };
 
   const handleSignup = async (e: FormEvent<HTMLFormElement>) => {
@@ -72,29 +51,17 @@ function Signup() {
       return;
     }
 
-    setIsLoading(true);
+    const signupData = { name, phoneNumber, password };
 
-    try {
-      const signupData = {
-        name,
-        phoneNumber,
-        password,
-      };
-
-      await registerUser(signupData);
-      toast.success("Signup successful! Please login to continue");
-      navigate("/login");
-    } catch (error: any) {
-      const errorMessage =
-        error.response.data.message ||
-        "Signup failed. Please check your signup details.";
-      setErrors({
-        general: errorMessage,
-      });
-      toast.error(errorMessage);
-    } finally {
-      setIsLoading(false);
-    }
+    await handleFormSubmission(signupData, registerUser, {
+      setLoading: setIsLoading,
+      setErrors,
+      onSuccess: () => {
+        navigate("/login");
+      },
+      successMessage: "Signup successful! Please login to continue",
+      errorMessage: "Signup failed. Please check your signup details.",
+    });
   };
 
   return (
@@ -196,15 +163,20 @@ function Signup() {
                     : "Passwords do not match"}
                 </p>
 
-                <p
-                  className={`text-xs mt-1 ${
-                    password.length >= 6 ? "text-green-400" : "text-gray-500"
-                  }`}
-                >
-                  {password.length >= 6
-                    ? "✓ Password meets minimum length"
-                    : "Password must be at least 6 characters"}
-                </p>
+                {/* Use password strength utility */}
+                {(() => {
+                  const strength = getPasswordStrength(password);
+                  return (
+                    <p
+                      className={`text-xs mt-1 ${
+                        strength.isValid ? "text-green-400" : "text-gray-500"
+                      }`}
+                    >
+                      {strength.isValid ? "✓ " : ""}
+                      {strength.message}
+                    </p>
+                  );
+                })()}
               </div>
             </div>
 

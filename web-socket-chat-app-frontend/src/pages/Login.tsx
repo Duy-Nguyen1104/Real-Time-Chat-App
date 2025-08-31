@@ -1,11 +1,12 @@
 import { ChangeEvent, FormEvent, useState } from "react";
 import { useNavigate } from "react-router-dom";
-// import { loginUser } from "../services/authService";
 import { toast } from "react-toastify";
 import Spinner from "../components/Spinner";
 import { Link } from "react-router-dom";
 import axios from "axios";
 import { loginUser, setAuthToken } from "../services/authService";
+import { validateLoginForm, ValidationError } from "../utils/validation";
+import { handleFormSubmission } from "../utils/apiResponseHandler";
 
 axios.defaults.baseURL = "http://localhost:8080";
 
@@ -21,11 +22,7 @@ function Login() {
     password: "",
   });
 
-  const [errors, setErrors] = useState<{
-    phoneNumber?: string;
-    password?: string;
-    general?: string;
-  }>({});
+  const [errors, setErrors] = useState<ValidationError>({});
 
   const [isLoading, setIsLoading] = useState(false);
 
@@ -39,44 +36,27 @@ function Login() {
   };
 
   const validateForm = () => {
-    const newErrors: { phoneNumber?: string; password?: string } = {};
-
-    if (!phoneNumber) {
-      newErrors.phoneNumber = "Please enter phone number";
-    }
-
-    if (!password) {
-      newErrors.password = "Please enter password";
-    } else if (password.length < 6) {
-      newErrors.password = "Password must be at least 6 characters";
-    }
-
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
+    const result = validateLoginForm(phoneNumber, password);
+    setErrors(result.errors);
+    return result.isValid;
   };
 
   const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
 
-    if (validateForm()) {
-      setIsLoading(true);
-
-      try {
-        await loginUser(formData);
-        toast.success("Login successful");
-        navigate("/chat");
-      } catch (error: any) {
-        const errorMessage =
-          error.response.data.message ||
-          "Login failed. Please check your credentials.";
-        setErrors({
-          general: errorMessage,
-        });
-        toast.error(errorMessage);
-      } finally {
-        setIsLoading(false);
-      }
+    if (!validateForm()) {
+      return;
     }
+
+    await handleFormSubmission(formData, loginUser, {
+      setLoading: setIsLoading,
+      setErrors,
+      onSuccess: () => {
+        navigate("/home");
+      },
+      successMessage: "Login successful",
+      errorMessage: "Login failed. Please check your credentials.",
+    });
   };
 
   return (

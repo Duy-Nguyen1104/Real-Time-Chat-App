@@ -31,33 +31,62 @@ function Chat() {
 
   // Reference to track if WebSocket is connected
   const webSocketConnected = useRef(false);
+  // Reference to track current active conversation for WebSocket handler
+  const activeConversationRef = useRef<string | null>(null);
+
+  // Update ref whenever activeConversationId changes
+  useEffect(() => {
+    activeConversationRef.current = activeConversationId;
+  }, [activeConversationId]);
 
   useEffect(() => {
     if (!currentUser.id || webSocketConnected.current) return;
 
     const handleMessageReceived = (newMessage: Message) => {
-      if (activeConversationId === newMessage.conversationId) {
-        setMessages((prev) => [...prev, newMessage]);
+      console.log("Message received in handler:", newMessage);
+
+      // Check if the message is for the currently active conversation
+      const isForActiveConversation =
+        activeConversationRef.current === newMessage.conversationId;
+
+      if (isForActiveConversation) {
+        // Add message to current conversation's messages (avoid duplicates)
+        setMessages((prevMessages) => {
+          // Don't add duplicate messages - check if message already exists
+          const messageExists = prevMessages.some(
+            (msg) =>
+              msg.id === newMessage.id ||
+              (msg.content === newMessage.content &&
+                msg.sender.id === newMessage.sender.id &&
+                Math.abs(
+                  new Date(msg.timestamp).getTime() -
+                    new Date(newMessage.timestamp).getTime()
+                ) < 1000)
+          );
+
+          if (!messageExists) {
+            return [...prevMessages, newMessage];
+          }
+          return prevMessages;
+        });
       }
-      // Update conversations with new message details
+
+      // Always update conversations list with new message details
       setConversations((prev) => {
         const updatedConversations = [...prev];
         const conversationIndex = updatedConversations.findIndex(
           (conv) => conv.id === newMessage.conversationId
         );
         if (conversationIndex !== -1) {
-          // Update the conversation with new message data
+          // Update the conversation with new message data using the message's timestamp
           const updatedConversation = {
             ...updatedConversations[conversationIndex],
             lastMessage: newMessage.content,
-            lastMessageTime: new Date().toLocaleTimeString([], {
-              hour: "2-digit",
-              minute: "2-digit",
-            }),
-            unreadCount:
-              activeConversationId === newMessage.conversationId
-                ? 0
-                : updatedConversations[conversationIndex].unreadCount + 1,
+            lastMessageTime: newMessage.timestamp, // Use message timestamp instead of current time
+            // Only increment unread count if this conversation is not currently active
+            unreadCount: isForActiveConversation
+              ? 0
+              : updatedConversations[conversationIndex].unreadCount + 1,
           };
 
           // Remove the conversation from the array
@@ -79,13 +108,19 @@ function Chat() {
       disconnectWebSocket();
       webSocketConnected.current = false;
     };
-  }, [currentUser.id, activeConversationId]);
+  }, [currentUser.id]); // Remove activeConversationId dependency
 
   // Function to set active conversation by ID
-  const handleSetActiveConversation = useCallback((id: string) => {
-    setMessages([]); // Clear messages when changing conversation
-    setActiveConversationId(id);
-  }, []);
+  const handleSetActiveConversation = useCallback(
+    (id: string) => {
+      // Only clear messages if switching to a different conversation
+      if (activeConversationId !== id) {
+        setMessages([]); // Clear messages when changing conversation
+      }
+      setActiveConversationId(id);
+    },
+    [activeConversationId]
+  );
 
   // Fetch conversations on component mount
   useEffect(() => {
@@ -142,6 +177,7 @@ function Chat() {
           `/messages/${currentUser.id}/${receiverId}`
         );
 
+        // Clear messages first, then set new ones for the active conversation
         setMessages(data.data || []);
 
         // Mark conversation as read
@@ -191,18 +227,8 @@ function Chat() {
         conversationId: activeConversationId,
         timestamp: now.toISOString(),
       };
-      const uiMessage: Message = {
-        id: `temp-${Date.now()}`,
-        ...message,
-        sender: {
-          id: currentUser.id,
-          name: currentUser.name,
-        },
-        read: false,
-      };
 
-      setMessages((prev) => [...prev, uiMessage]);
-
+      // Don't add temporary UI message - let WebSocket handle all message updates
       const socketSent = sendMessage(message);
 
       if (!socketSent) {
@@ -210,18 +236,27 @@ function Chat() {
         await axios.post("/messages", message);
       }
 
-      // Create updated conversation with new message details
-      const updatedConversation = {
-        ...activeConversation,
-        lastMessage: content,
-        lastMessageTime: now.toISOString(),
-      };
+      // Update the conversation's last message time optimistically for better UX
+      setConversations((prev) => {
+        const updatedConversations = [...prev];
+        const conversationIndex = updatedConversations.findIndex(
+          (conv) => conv.id === activeConversationId
+        );
+        if (conversationIndex !== -1) {
+          const updatedConversation = {
+            ...updatedConversations[conversationIndex],
+            lastMessage: content,
+            lastMessageTime: now.toISOString(),
+          };
 
-      // Update the conversations array - remove the active conversation and add it to the top
-      setConversations((prev) => [
-        updatedConversation,
-        ...prev.filter((conv) => conv.id !== activeConversationId),
-      ]);
+          // Remove the conversation from the array
+          updatedConversations.splice(conversationIndex, 1);
+
+          // Add it back at the beginning (newest messages first)
+          return [updatedConversation, ...updatedConversations];
+        }
+        return prev;
+      });
     } catch (err) {
       console.error("Failed to send message", err);
       toast.error("Failed to send message");

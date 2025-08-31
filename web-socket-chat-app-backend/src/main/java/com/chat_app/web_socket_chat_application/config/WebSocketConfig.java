@@ -1,5 +1,6 @@
 package com.chat_app.web_socket_chat_application.config;
 
+import org.springframework.beans.factory.annotation.Value;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.messaging.converter.DefaultContentTypeResolver;
@@ -16,24 +17,39 @@ import java.util.List;
 @Configuration
 @EnableWebSocketMessageBroker
 public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
+
+    @Value("${spring.rabbitmq.host}")
+    private String rabbitmqHost;
+
+    @Value("${spring.rabbitmq.stomp.port}")
+    private int rabbitmqStompPort;
+
+    @Value("${spring.rabbitmq.username}")
+    private String rabbitmqUsername;
+
+    @Value("${spring.rabbitmq.password}")
+    private String rabbitmqPassword;
+
     @Override
-    //Message broker to route messages between clients
     public void configureMessageBroker(MessageBrokerRegistry registry) {
-        registry.enableSimpleBroker("/user");
-        registry.setApplicationDestinationPrefixes("/app");
-        registry.setUserDestinationPrefix("/user");
+        registry.setApplicationDestinationPrefixes("/app")
+                .enableStompBrokerRelay("/topic", "/queue")
+                .setRelayHost(rabbitmqHost)
+                .setRelayPort(rabbitmqStompPort)
+                .setClientLogin(rabbitmqUsername)
+                .setClientPasscode(rabbitmqPassword)
+                .setSystemLogin(rabbitmqUsername)
+                .setSystemPasscode(rabbitmqPassword);
     }
 
     @Override
-    //Stomp endpoint to connect to the websocket
     public void registerStompEndpoints(StompEndpointRegistry registry) {
         registry.addEndpoint("/chat")
-                .setAllowedOrigins("http://localhost:5173", "http://localhost")
+                .setAllowedOrigins("http://localhost:5173", "http://localhost:3000", "http://localhost", "http://34.13.77.103")
                 .withSockJS();
     }
 
     @Override
-    //customize how messages are serialized and deserialized
     public boolean configureMessageConverters(List<MessageConverter> messageConverters) {
         DefaultContentTypeResolver resolver = new DefaultContentTypeResolver();
         resolver.setDefaultMimeType(MimeTypeUtils.APPLICATION_JSON);
@@ -41,7 +57,6 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
         converter.setObjectMapper(new ObjectMapper());
         converter.setContentTypeResolver(resolver);
         messageConverters.add(converter);
-
         return false;
     }
 }

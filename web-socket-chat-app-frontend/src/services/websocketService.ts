@@ -26,18 +26,22 @@ export const connectWebSocket = (
       reconnectAttempts = 0;
 
       // Subscribe to personal message queue
-      client.subscribe(
-        `/user/${userId}/queue/messages`,
+      const subscription = client.subscribe(
+        `/queue/user.${userId}.messages`,
         (message: IMessage) => {
+          console.log("Raw WebSocket message received:", message);
+          console.log("✅ Message headers:", message.headers);
+          console.log("✅ Message body:", message.body);
           try {
             const receivedMessage = JSON.parse(message.body);
-            console.log("Received message via WebSocket:", receivedMessage);
+            console.log("Parsed message via WebSocket:", receivedMessage);
             onMessageReceived(receivedMessage);
           } catch (error) {
             console.error("Error processing WebSocket message:", error);
           }
         }
       );
+      console.log("Subscription:", subscription);
     },
     onStompError: (frame) => {
       console.error("STOMP error:", frame);
